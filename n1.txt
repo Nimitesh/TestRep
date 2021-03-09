@@ -1,3 +1,6 @@
 content of n1
+<<<<<<< HEAD
 content at line 2
-changes from ios
+=======
+content at line 2
+>>>>>>> 06086b8918286212b9eaa184a7fc61241c1b5f2dgit 
