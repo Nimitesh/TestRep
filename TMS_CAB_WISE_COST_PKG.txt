@@ -13,14 +13,13 @@ ADDL_KM_AMT, ADDITIONAL_COST, DEDUCTION,ADDL_AMT_Trip,deduction_ven, FUEL_HIKE,T
          +CASE WHEN "Running KM"-"Pool KM" > 0 THEN ("Running KM"-"Pool KM") * EXT_KM_RATE ELSE 0 END "Total Cost",
          TRIPS, REQUEST, USAGE_TYPE
   FROM (
-  SELECT BILLINGID, FUELTYPEID,LOCCODE,BPID, TRANSPORTERID,SITE,CITY,COMPANY_NAME "Vendor", CAPACITY || '-Seater' "Fleet Category", TODATE,
-  (select count(1) from tms_vehicle_mst where transporterid=x.transporterid 
-  AND BPMODEL=X.BPMODEL and active<>'X' AND FUELTYPEID=X.FUELTYPEID) "Fleet Count",
+  SELECT BILLINGID, FUELTYPEID,LOCCODE,BPID, TRANSPORTERID,SITE,CITY,COMPANY_NAME "Vendor", 
+  CAPACITY || '-Seater' "Fleet Category", TODATE,
+  FN_GET_FLEET_CNT(X.BILLINGID,x.transporterid,x.bpid,CAPACITY) "Fleet Count",
   (select bpname from tms_billplan_mst where bpid=x.bpid) "Billplan Name",
   (select amount from tms_billplan_mst where bpid=x.bpid) "MG Amount",
   KM_LIMIT "KM Limit",
-  (select count(1) from tms_vehicle_mst where transporterid=x.transporterid 
-  AND BPMODEL=X.BPMODEL AND FUELTYPEID=X.FUELTYPEID and active<>'X')*km_limit "Pool KM",
+  FN_GET_FLEET_CNT(X.BILLINGID,x.transporterid,x.bpid,CAPACITY)*km_limit "Pool KM",
   SUM(routedistance) "Running KM",  
   case when TODATE <'1-OCT-2021' THEN  
        NVL((SELECT addl_amt FROM tms_vendor_bill_oc_dtl where billingid=X.BILLINGID and transporterid=x.transporterid),0)
@@ -47,8 +46,9 @@ ADDL_KM_AMT, ADDITIONAL_COST, DEDUCTION,ADDL_AMT_Trip,deduction_ven, FUEL_HIKE,T
    V.FUELTYPEID,TOTALPAX REQUEST,V.USAGE_TYPE
   from tms_dutyslip_trn d, TMS_VEHICLE_MST v,  TMS_VENDOR_MST vn,
   TMS_BILLPLAN_MST b, TMS_VEHICLETYPE_MST vt, TMS_DS_BILLING_DTL bd,TMS_BILLING_TRN BC, TMS_DS_AUDIT_DTL DS
-  WHERE D.DSDATE >= '1-JAN-2022' AND D.DSDATE < '1-MAY-2022' AND b.BPID=303 
-  and d.dsscode in (4,5,6) AND D.LOCCODE='ASEZ'
+  WHERE D.DSDATE >= '1-JAN-2022' AND D.DSDATE < '1-AUG-2022' --AND b.BPID=303 
+  and d.dsscode in (4,5,6) --AND D.LOCCODE='ASEZ'
+  AND NOT EXISTS (SELECT 1 FROM TMS_CAB_WISE_COST_PKG WHERE BILLINGID = BC.BILLINGID)
   --AND VN.LOCCODE in (SELECT * FROM TABLE(Ifs_Rpt_Split(P_LOC,',')))
   AND d.VEHICLEID = v.VEHICLEID --AND NVL(COST,0)<>0
   AND v.TRANSPORTERID = vn.TRANSPORTERID
